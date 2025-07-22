@@ -97,6 +97,8 @@ The server works with any Storybook that exposes an `index.json` file. Common pa
 4. Set the environment variable: `export STORYBOOK_URL="your-storybook-url"`
 5. Run in development mode: `yarn dev`
 
+> Note: You can also use `npx @modelcontextprotocol/inspector tsx src/index.ts` instead of `yarn dev` if you prefer.
+
 ### Building
 
 ```bash
