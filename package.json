@@ -19,7 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest --watch",
     "prepublishOnly": "npm run build",
-    "postinstall": "npx playwright install chromium --with-deps",
+    "postinstall": "if [ \"$CI\" != \"true\" ]; then npx playwright install chromium --with-deps; fi",
     "link": "npm link",
     "unlink": "npm unlink",
     "commit": "yarn git-cz"
