@@ -1,6 +1,6 @@
 {
   "name": "storybook-mcp",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A Model Context Protocol (MCP) server for Storybook.",
   "type": "module",
   "main": "dist/index.js",
@@ -27,7 +27,8 @@
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "storybook"
+    "storybook",
+    "storybook-mcp"
   ],
   "author": "unadlib",
   "license": "MIT",
