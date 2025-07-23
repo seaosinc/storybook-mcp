@@ -1,6 +1,6 @@
 {
   "name": "storybook-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Model Context Protocol (MCP) server for Storybook.",
   "type": "module",
   "main": "dist/index.js",
@@ -30,6 +30,10 @@
     "storybook",
     "storybook-mcp"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcpland/storybook-mcp.git"
+  },
   "author": "unadlib",
   "license": "MIT",
   "dependencies": {

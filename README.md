@@ -131,4 +131,4 @@ The server includes comprehensive error handling for:
 
 ## License
 
-MIT License - see LICENSE file for details.
+Storybook MCP is [MIT licensed](https://github.com/mcpland/storybook-mcp/blob/main/LICENSE).
