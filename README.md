@@ -1,11 +1,15 @@
 # Storybook MCP Server
 
+![Node CI](https://github.com/mcpland/storybook-mcp/workflows/Node%20CI/badge.svg)
+[![npm](https://img.shields.io/npm/v/storybook-mcp.svg)](https://www.npmjs.com/package/storybook-mcp)
+![license](https://img.shields.io/npm/l/storybook-mcp)
+
 A Model Context Protocol (MCP) server that provides tools to interact with Storybook documentation and component information.
 
 ## Features
 
 - **getComponentList**: Get a list of all components from a configured Storybook
-- **getComponentPropsType**: Get detailed props information for specific components using headless browser automation
+- **getComponentProps**: Get detailed props information for specific components using headless browser automation
 
 ## Installation and Configuration
 
@@ -50,7 +54,7 @@ Button
 ...
 ```
 
-### 2. getComponentPropsType
+### 2. getComponentProps
 
 Gets detailed props information for a specific component, including:
 
@@ -67,7 +71,7 @@ Gets detailed props information for a specific component, including:
 **Example usage:**
 
 ```
-Tool: getComponentPropsType
+Tool: getComponentProps
 Parameters: { "componentName": "Button" }
 ```
 

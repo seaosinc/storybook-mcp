@@ -118,7 +118,7 @@ describe("StorybookMCPServer", () => {
     expect(result.content[0].text).not.toContain("Other");
   });
 
-  it("getComponentPropsType should return props table html for v3", async () => {
+  it("getComponentProps should return props table html for v3", async () => {
     const mockData = {
       v: 3,
       stories: {
@@ -142,7 +142,7 @@ describe("StorybookMCPServer", () => {
       json: async () => mockData,
     } as any);
     const server = new StorybookMCPServer();
-    const result = await (server as any).getComponentPropsType("Button");
+    const result = await (server as any).getComponentProps("Button");
     expect(result.content[0].text).toContain("<tr><td>prop</td></tr>");
   });
 
@@ -167,7 +167,7 @@ describe("StorybookMCPServer", () => {
     expect(result.content[0].text).not.toContain("Other");
   });
 
-  it("getComponentPropsType should return props table html for v5", async () => {
+  it("getComponentProps should return props table html for v5", async () => {
     const mockData = {
       v: 5,
       entries: {
@@ -179,7 +179,7 @@ describe("StorybookMCPServer", () => {
       json: async () => mockData,
     } as any);
     const server = new StorybookMCPServer();
-    const result = await (server as any).getComponentPropsType("Button");
+    const result = await (server as any).getComponentProps("Button");
     expect(result.content[0].text).toContain("<tr><td>prop</td></tr>");
   });
 });

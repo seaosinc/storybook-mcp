@@ -20,7 +20,7 @@ import {
 // define tool parameters
 const GetComponentListSchema = z.object({});
 
-const GetComponentPropsTypeSchema = z.object({
+const GetComponentPropsSchema = z.object({
   componentName: z
     .string()
     .describe("The name of the component to get props information for"),
@@ -71,8 +71,8 @@ export class StorybookMCPServer {
             },
           },
           {
-            name: "getComponentPropsType",
-            description: "Get props type information for a specific component",
+            name: "getComponentProps",
+            description: "Get props information for a specific component",
             inputSchema: {
               type: "object",
               properties: {
@@ -97,9 +97,9 @@ export class StorybookMCPServer {
         switch (name) {
           case "getComponentList":
             return await this.getComponentList();
-          case "getComponentPropsType":
-            const parsed = GetComponentPropsTypeSchema.parse(args);
-            return await this.getComponentPropsType(parsed.componentName);
+          case "getComponentProps":
+            const parsed = GetComponentPropsSchema.parse(args);
+            return await this.getComponentProps(parsed.componentName);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -150,8 +150,8 @@ export class StorybookMCPServer {
     }
   }
 
-  // get component props type information
-  private async getComponentPropsType(componentName: string) {
+  // get component props information
+  private async getComponentProps(componentName: string) {
     try {
       // 1. get Storybook data to find component ID
       const response = await fetch(this.storybookUrl);
