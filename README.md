@@ -13,9 +13,9 @@ A Model Context Protocol (MCP) server that provides tools to interact with Story
 
 ## Installation and Configuration
 
-### For Claude Desktop or Cursor
+### MCP Settings
 
-Add the following configuration to your Claude Desktop MCP settings:
+Add the following configuration to MCP settings:
 
 ```json
 {
@@ -77,7 +77,7 @@ Parameters: { "componentName": "Button" }
 
 ## How it works
 
-1. **Component List**: The server fetches the Storybook's `index.json` file and extracts all components marked as "docs" type
+1. **Component List**: The server fetches the Storybook's `index.json` file(v3 is `stories.json`) and extracts all components marked as "docs" type
 2. **Props Information**: For component props, the server:
    - Finds the component's documentation ID from the index.json
    - Constructs the iframe URL for the component's docs page
@@ -86,7 +86,7 @@ Parameters: { "componentName": "Button" }
 
 ## Supported Storybook URLs
 
-The server works with any Storybook that exposes an `index.json` file. Common patterns:
+The server works with any Storybook that exposes an `index.json` file(v3 is `stories.json`). Common patterns:
 
 - `https://your-storybook-domain.com/index.json`
 - `https://your-storybook-domain.com/storybook/index.json`
