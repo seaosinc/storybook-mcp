@@ -6,6 +6,16 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { chromium } from "playwright";
+import {
+  StorybookData as StorybookDataV3,
+  getComponentList as getComponentListV3,
+  getComponentPropsDocUrl as getComponentPropsDocUrlV3,
+} from "./storybookv3.js";
+import {
+  StorybookData as StorybookDataV5,
+  getComponentList as getComponentListV5,
+  getComponentPropsDocUrl as getComponentPropsDocUrlV5,
+} from "./storybookv5.js";
 
 // define tool parameters
 const GetComponentListSchema = z.object({});
@@ -118,24 +128,16 @@ export class StorybookMCPServer {
         );
       }
 
-      const data = await response.json();
-      const entries = data.entries || {};
+      const data = (await response.json()) as StorybookDataV3 | StorybookDataV5;
 
-      // extract component names, filter only docs type entries
-      const components = Object.values(entries)
-        .filter((entry: any) => entry.type === "docs")
-        .map((entry: any) => entry.title)
-        .filter((title: string) => title)
-        .sort();
-
-      // remove duplicates
-      const uniqueComponents = [...new Set(components)];
+      const components =
+        data.v === 3 ? getComponentListV3(data) : getComponentListV5(data);
 
       return {
         content: [
           {
             type: "text",
-            text: `Available components:\n${uniqueComponents.join("\n")}`,
+            text: `Available components:\n${components.join("\n")}`,
           },
         ],
       };
@@ -159,21 +161,16 @@ export class StorybookMCPServer {
         );
       }
 
-      const data = await response.json();
-      const entries = data.entries || {};
+      const data = (await response.json()) as StorybookDataV3 | StorybookDataV5;
 
-      // find matching component entry
-      const matchingEntry = Object.values(entries).find(
-        (entry: any) => entry.type === "docs" && entry.title === componentName
-      ) as any;
+      const componentUrl =
+        data.v === 3
+          ? getComponentPropsDocUrlV3(data, componentName, this.storybookUrl)
+          : getComponentPropsDocUrlV5(data, componentName, this.storybookUrl);
 
-      if (!matchingEntry) {
+      if (!componentUrl) {
         throw new Error(`Component "${componentName}" not found in Storybook`);
       }
-
-      // build component documentation page URL
-      const baseUrl = this.storybookUrl.replace("/index.json", "");
-      const componentUrl = `${baseUrl}/iframe.html?viewMode=docs&id=${matchingEntry.id}`;
 
       // use Playwright to get page content
       const browser = await chromium.launch({ headless: true });

@@ -49,8 +49,106 @@ describe("StorybookMCPServer", () => {
     expect(() => new StorybookMCPServer()).not.toThrow();
   });
 
-  it("getComponentList should return unique sorted components", async () => {
+  it("getComponentList should return unique sorted components for v3", async () => {
     const mockData = {
+      v: 3,
+      stories: {
+        a: {
+          id: "button--primary",
+          title: "Button",
+          name: "Primary",
+          importPath: "src/Button.tsx",
+          kind: "Components/Button",
+          story: "Primary",
+          parameters: {
+            __id: "a",
+            docsOnly: false,
+            fileName: "src/Button.tsx",
+          },
+        },
+        b: {
+          id: "input--default",
+          title: "Input",
+          name: "Default",
+          importPath: "src/Input.tsx",
+          kind: "Components/Input",
+          story: "Default",
+          parameters: {
+            __id: "b",
+            docsOnly: false,
+            fileName: "src/Input.tsx",
+          },
+        },
+        c: {
+          id: "button--secondary",
+          title: "Button",
+          name: "Secondary",
+          importPath: "src/Button.tsx",
+          kind: "Components/Button",
+          story: "Secondary",
+          parameters: {
+            __id: "c",
+            docsOnly: false,
+            fileName: "src/Button.tsx",
+          },
+        },
+        d: {
+          id: "other--docs",
+          title: "Other",
+          name: "Docs",
+          importPath: "src/Other.tsx",
+          kind: "Components/Other",
+          story: "Docs",
+          parameters: {
+            __id: "d",
+            docsOnly: true,
+            fileName: "src/Other.tsx",
+          },
+        },
+      },
+    };
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockData,
+    } as any);
+    const server = new StorybookMCPServer();
+    const result = await (server as any).getComponentList();
+    expect(result.content[0].text).toContain("Button");
+    expect(result.content[0].text).toContain("Input");
+    expect(result.content[0].text).not.toContain("Other");
+  });
+
+  it("getComponentPropsType should return props table html for v3", async () => {
+    const mockData = {
+      v: 3,
+      stories: {
+        a: {
+          id: "button--primary",
+          title: "Button",
+          name: "Primary",
+          importPath: "src/Button.tsx",
+          kind: "Components/Button",
+          story: "Primary",
+          parameters: {
+            __id: "a",
+            docsOnly: false,
+            fileName: "src/Button.tsx",
+          },
+        },
+      },
+    };
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockData,
+    } as any);
+    const server = new StorybookMCPServer();
+    const result = await (server as any).getComponentPropsType("Button");
+    expect(result.content[0].text).toContain("<tr><td>prop</td></tr>");
+  });
+
+  it("getComponentList should return unique sorted components for v5", async () => {
+    const mockData = {
+      v: 5,
       entries: {
         a: { type: "docs", title: "Button" },
         b: { type: "docs", title: "Input" },
@@ -69,8 +167,9 @@ describe("StorybookMCPServer", () => {
     expect(result.content[0].text).not.toContain("Other");
   });
 
-  it("getComponentPropsType should return props table html", async () => {
+  it("getComponentPropsType should return props table html for v5", async () => {
     const mockData = {
+      v: 5,
       entries: {
         a: { type: "docs", title: "Button", id: "button--docs" },
       },
@@ -79,7 +178,6 @@ describe("StorybookMCPServer", () => {
       ok: true,
       json: async () => mockData,
     } as any);
-
     const server = new StorybookMCPServer();
     const result = await (server as any).getComponentPropsType("Button");
     expect(result.content[0].text).toContain("<tr><td>prop</td></tr>");
