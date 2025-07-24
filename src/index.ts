@@ -5,6 +5,7 @@ import { StorybookMCPServer } from "./server.js";
 // main function
 async function main() {
   try {
+    console.log("Starting Storybook MCP Server...");
     const server = new StorybookMCPServer();
     await server.startStdio();
   } catch (error) {
@@ -12,17 +13,6 @@ async function main() {
     process.exit(1);
   }
 }
-
-// handle process exit
-process.on("SIGINT", () => {
-  console.log("\nShutting down Storybook MCP Server...");
-  process.exit(0);
-});
-
-process.on("SIGTERM", () => {
-  console.log("\nShutting down Storybook MCP Server...");
-  process.exit(0);
-});
 
 main().catch((error) => {
   console.error("Fatal error:", error);
