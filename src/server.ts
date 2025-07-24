@@ -20,10 +20,10 @@ import {
 // define tool parameters
 const GetComponentListSchema = z.object({});
 
-const GetComponentPropsSchema = z.object({
-  componentName: z
-    .string()
-    .describe("The name of the component to get props information for"),
+const GetComponentsPropsSchema = z.object({
+  componentNames: z
+    .array(z.string())
+    .describe("Array of component names to get props information for"),
 });
 
 export class StorybookMCPServer {
@@ -71,18 +71,21 @@ export class StorybookMCPServer {
             },
           },
           {
-            name: "getComponentProps",
-            description: "Get props information for a specific component",
+            name: "getComponentsProps",
+            description: "Get props information for multiple components",
             inputSchema: {
               type: "object",
               properties: {
-                componentName: {
-                  type: "string",
+                componentNames: {
+                  type: "array",
+                  items: {
+                    type: "string",
+                  },
                   description:
-                    "The name of the component to get props information for",
+                    "Array of component names to get props information for",
                 },
               },
-              required: ["componentName"],
+              required: ["componentNames"],
             },
           },
         ],
@@ -97,9 +100,9 @@ export class StorybookMCPServer {
         switch (name) {
           case "getComponentList":
             return await this.getComponentList();
-          case "getComponentProps":
-            const parsed = GetComponentPropsSchema.parse(args);
-            return await this.getComponentProps(parsed.componentName);
+          case "getComponentsProps":
+            const parsed = GetComponentsPropsSchema.parse(args);
+            return await this.getComponentsProps(parsed.componentNames);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -150,10 +153,10 @@ export class StorybookMCPServer {
     }
   }
 
-  // get component props information
-  private async getComponentProps(componentName: string) {
+  // get multiple components props information
+  private async getComponentsProps(componentNames: string[]) {
     try {
-      // 1. get Storybook data to find component ID
+      // 1. get Storybook data to find component IDs
       const response = await fetch(this.storybookUrl);
       if (!response.ok) {
         throw new Error(
@@ -163,53 +166,82 @@ export class StorybookMCPServer {
 
       const data = (await response.json()) as StorybookDataV3 | StorybookDataV5;
 
-      const componentUrl =
-        data.v === 3
-          ? getComponentPropsDocUrlV3(data, componentName, this.storybookUrl)
-          : getComponentPropsDocUrlV5(data, componentName, this.storybookUrl);
-
-      if (!componentUrl) {
-        throw new Error(`Component "${componentName}" not found in Storybook`);
-      }
+      const results: { [componentName: string]: string } = {};
+      const errors: { [componentName: string]: string } = {};
 
       // use Playwright to get page content
       const browser = await chromium.launch({ headless: true });
-      const page = await browser.newPage();
 
       try {
-        await page.goto(componentUrl, { waitUntil: "networkidle" });
+        for (const componentName of componentNames) {
+          try {
+            const componentUrl =
+              data.v === 3
+                ? getComponentPropsDocUrlV3(data, componentName, this.storybookUrl)
+                : getComponentPropsDocUrlV5(data, componentName, this.storybookUrl);
 
-        // wait for table to load
-        await page.waitForSelector("table.docblock-argstable", {
-          timeout: 10000,
-        });
+            if (!componentUrl) {
+              errors[componentName] = `Component "${componentName}" not found in Storybook`;
+              continue;
+            }
 
-        // get props table HTML
-        const propsTableHTML = await page.$eval(
-          "table.docblock-argstable",
-          (element: HTMLElement) => element.innerHTML
-        );
+            const page = await browser.newPage();
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Props information for component "${componentName}":\n\n${propsTableHTML}`,
-            },
-          ],
-        };
-      } catch (pageError) {
-        throw new Error(
-          `Failed to load component page or find props table: ${
-            pageError instanceof Error ? pageError.message : String(pageError)
-          }`
-        );
+            try {
+              await page.goto(componentUrl, { waitUntil: "networkidle" });
+
+              // wait for table to load
+              await page.waitForSelector("table.docblock-argstable", {
+                timeout: 10000,
+              });
+
+              // get props table HTML
+              const propsTableHTML = await page.$eval(
+                "table.docblock-argstable",
+                (element: HTMLElement) => element.innerHTML
+              );
+
+              results[componentName] = propsTableHTML;
+            } catch (pageError) {
+              errors[componentName] = `Failed to load component page or find props table: ${
+                pageError instanceof Error ? pageError.message : String(pageError)
+              }`;
+            } finally {
+              await page.close();
+            }
+          } catch (componentError) {
+            errors[componentName] = `Failed to get component URL: ${
+              componentError instanceof Error ? componentError.message : String(componentError)
+            }`;
+          }
+        }
       } finally {
         await browser.close();
       }
+
+      // format results
+      let resultText = "Props information for components:\n\n";
+
+      for (const componentName of componentNames) {
+        resultText += `### ${componentName}\n`;
+        if (results[componentName]) {
+          resultText += `${results[componentName]}\n\n`;
+        } else if (errors[componentName]) {
+          resultText += `Error: ${errors[componentName]}\n\n`;
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: resultText,
+          },
+        ],
+      };
     } catch (error) {
       throw new Error(
-        `Failed to get component props: ${
+        `Failed to get components props: ${
           error instanceof Error ? error.message : String(error)
         }`
       );

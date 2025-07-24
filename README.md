@@ -9,7 +9,7 @@ A Model Context Protocol (MCP) server that provides tools to interact with Story
 ## Features
 
 - **getComponentList**: Get a list of all components from a configured Storybook
-- **getComponentProps**: Get detailed props information for specific components using headless browser automation
+- **getComponentsProps**: Get detailed props information for multiple components using headless browser automation
 
 ## Installation and Configuration
 
@@ -54,9 +54,9 @@ Button
 ...
 ```
 
-### 2. getComponentProps
+### 2. getComponentsProps
 
-Gets detailed props information for a specific component, including:
+Gets detailed props information for multiple components, including:
 
 - Property names
 - Types
@@ -66,13 +66,13 @@ Gets detailed props information for a specific component, including:
 
 **Parameters:**
 
-- `componentName` (string): The name of the component to get props information for
+- `componentNames` (array of strings): Array of component names to get props information for
 
 **Example usage:**
 
 ```
-Tool: getComponentProps
-Parameters: { "componentName": "Button" }
+Tool: getComponentsProps
+Parameters: { "componentNames": ["Button", "Input", "Avatar"] }
 ```
 
 ## How it works

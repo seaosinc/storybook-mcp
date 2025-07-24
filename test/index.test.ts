@@ -118,7 +118,7 @@ describe("StorybookMCPServer", () => {
     expect(result.content[0].text).not.toContain("Other");
   });
 
-  it("getComponentProps should return props table html for v3", async () => {
+  it("getComponentsProps should return props table html for v3", async () => {
     const mockData = {
       v: 3,
       stories: {
@@ -142,8 +142,9 @@ describe("StorybookMCPServer", () => {
       json: async () => mockData,
     } as any);
     const server = new StorybookMCPServer();
-    const result = await (server as any).getComponentProps("Button");
+    const result = await (server as any).getComponentsProps(["Button"]);
     expect(result.content[0].text).toContain("<tr><td>prop</td></tr>");
+    expect(result.content[0].text).toContain("### Button");
   });
 
   it("getComponentList should return unique sorted components for v5", async () => {
@@ -167,7 +168,7 @@ describe("StorybookMCPServer", () => {
     expect(result.content[0].text).not.toContain("Other");
   });
 
-  it("getComponentProps should return props table html for v5", async () => {
+  it("getComponentsProps should return props table html for v5", async () => {
     const mockData = {
       v: 5,
       entries: {
@@ -179,7 +180,27 @@ describe("StorybookMCPServer", () => {
       json: async () => mockData,
     } as any);
     const server = new StorybookMCPServer();
-    const result = await (server as any).getComponentProps("Button");
+    const result = await (server as any).getComponentsProps(["Button"]);
+    expect(result.content[0].text).toContain("<tr><td>prop</td></tr>");
+    expect(result.content[0].text).toContain("### Button");
+  });
+
+  it("getComponentsProps should handle multiple components", async () => {
+    const mockData = {
+      v: 5,
+      entries: {
+        a: { type: "docs", title: "Button", id: "button--docs" },
+        b: { type: "docs", title: "Input", id: "input--docs" },
+      },
+    };
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockData,
+    } as any);
+    const server = new StorybookMCPServer();
+    const result = await (server as any).getComponentsProps(["Button", "Input"]);
+    expect(result.content[0].text).toContain("### Button");
+    expect(result.content[0].text).toContain("### Input");
     expect(result.content[0].text).toContain("<tr><td>prop</td></tr>");
   });
 });
