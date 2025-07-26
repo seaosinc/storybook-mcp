@@ -122,6 +122,25 @@ interface CustomTool {
 
 For more examples and detailed documentation, see [examples/custom-tools-example.md](examples/custom-tools-example.md).
 
+## Example
+
+Set `Spectrum` storybook-mcp config with `STORYBOOK_URL` and `CUSTOM_TOOLS` environment variables.
+
+```json
+{
+  "mcpServers": {
+    "storybook-mcp": {
+      "command": "npx",
+      "args": ["-y", "storybook-mcp@latest"],
+      "env": {
+        "STORYBOOK_URL": "https://opensource.adobe.com/spectrum-web-components/storybook/index.json",
+        "CUSTOM_TOOLS": "[{\"name\":\"getIconList\",\"description\":\"Get All Icons from the Icon page\",\"parameters\":{},\"page\":\"https://opensource.adobe.com/spectrum-web-components/storybook/iframe.html?viewMode=docs&id=icons--docs&globals=\",\"handler\":\"Array.from(document.querySelector('icons-demo').shadowRoot.querySelectorAll('.icon')).map(i => i.textContent)\"}]"
+      }
+    }
+  }
+}
+```
+
 ## How it works
 
 1. **Component List**: The server fetches the Storybook's `index.json` file(v3 is `stories.json`) and extracts all components marked as "docs" type
