@@ -10,6 +10,7 @@ A Model Context Protocol (MCP) server that provides tools to interact with Story
 
 - **getComponentList**: Get a list of all components from a configured Storybook
 - **getComponentsProps**: Get detailed props information for multiple components using headless browser automation
+- **Custom Tools**: Create custom tools that can extract any information from your Storybook pages using JavaScript
 
 ## Installation and Configuration
 
@@ -24,7 +25,8 @@ Add the following configuration to MCP settings:
       "command": "npx",
       "args": ["-y", "storybook-mcp"],
       "env": {
-        "STORYBOOK_URL": "<your_storybook_url>/index.json"
+        "STORYBOOK_URL": "<your_storybook_url>/index.json",
+        "CUSTOM_TOOLS": "[{\"name\":\"getIconList\",\"description\":\"Get All Icons from the Icon page\",\"parameters\":{},\"page\":\"https://spring-ui.jupiter.int.rclabenv.com/develop/iframe.html?viewMode=docs&id=icon-icon-list--icon-list&args=\",\"handler\":\"Array.from(document.querySelectorAll('#story--icon-icon-list--icon-list [class=\\\"typography-subtitleMini\\\"]')).map(i => i.textContent)\"}]"
       }
     }
   }
@@ -34,12 +36,15 @@ Add the following configuration to MCP settings:
 ### Environment Variables
 
 - `STORYBOOK_URL` (required): The URL to your Storybook's index.json file
+- `CUSTOM_TOOLS` (optional): JSON array of custom tool definitions for extracting specific information from your Storybook
 
 ## Usage
 
-The server provides two main tools:
+The server provides built-in tools and supports custom tools:
 
-### 1. getComponentList
+### Built-in Tools
+
+#### 1. getComponentList
 
 Retrieves a list of all available components from the configured Storybook.
 
@@ -54,7 +59,7 @@ Button
 ...
 ```
 
-### 2. getComponentsProps
+#### 2. getComponentsProps
 
 Gets detailed props information for multiple components, including:
 
@@ -74,6 +79,49 @@ Gets detailed props information for multiple components, including:
 Tool: getComponentsProps
 Parameters: { "componentNames": ["Button", "Input", "Avatar"] }
 ```
+
+### Custom Tools
+
+You can define custom tools to extract specific information from your Storybook pages. Each custom tool can:
+
+- Navigate to any page in your Storybook
+- Execute custom JavaScript to extract data
+- Return structured data to the AI assistant
+
+**Custom Tool Structure:**
+
+```typescript
+interface CustomTool {
+  name: string;           // Unique tool name
+  description: string;    // Tool description for the AI
+  parameters: object;     // Input parameters schema (optional)
+  page: string;          // URL to navigate to
+  handler: string;       // JavaScript code to execute on the page
+}
+```
+
+**Example Custom Tools:**
+
+```json
+[
+  {
+    "name": "getIconList",
+    "description": "Get All Icons from the Icon page",
+    "parameters": {},
+    "page": "https://your-storybook.com/?path=/docs/icon--docs",
+    "handler": "Array.from(document.querySelectorAll('.icon-name')).map(i => i.textContent)"
+  },
+  {
+    "name": "getColorPalette",
+    "description": "Extract color palette from design tokens",
+    "parameters": {},
+    "page": "https://your-storybook.com/?path=/docs/design-tokens--colors",
+    "handler": "Array.from(document.querySelectorAll('.color-swatch')).map(el => ({ name: el.getAttribute('data-color-name'), value: el.style.backgroundColor }))"
+  }
+]
+```
+
+For more examples and detailed documentation, see [examples/custom-tools-example.md](examples/custom-tools-example.md).
 
 ## How it works
 

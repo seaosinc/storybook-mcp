@@ -17,6 +17,15 @@ import {
   getComponentPropsDocUrl as getComponentPropsDocUrlV5,
 } from "./storybookv5.js";
 
+// Custom tool interface
+interface CustomTool {
+  name: string;
+  description: string;
+  parameters: Record<string, any>;
+  page: string;
+  handler: string;
+}
+
 // define tool parameters
 const GetComponentListSchema = z.object({});
 
@@ -29,6 +38,7 @@ const GetComponentsPropsSchema = z.object({
 export class StorybookMCPServer {
   private server: Server;
   private storybookUrl: string;
+  private customTools: CustomTool[] = [];
 
   constructor() {
     this.server = new Server(
@@ -53,42 +63,112 @@ export class StorybookMCPServer {
       throw new Error("STORYBOOK_URL environment variable is required");
     }
 
+    // Parse custom tools from environment variable
+    this.parseCustomTools();
+
     this.setupToolHandlers();
+  }
+
+  private parseCustomTools() {
+    const customToolsEnv = process.env.CUSTOM_TOOLS;
+    if (customToolsEnv) {
+      try {
+        const parsed = JSON.parse(customToolsEnv);
+        if (Array.isArray(parsed)) {
+          this.customTools = parsed.filter((tool: any, index: number) => {
+            // Validate required fields
+            if (!tool.name || typeof tool.name !== 'string') {
+              console.warn(`Custom tool at index ${index}: missing or invalid 'name' field`);
+              return false;
+            }
+            if (!tool.description || typeof tool.description !== 'string') {
+              console.warn(`Custom tool "${tool.name}": missing or invalid 'description' field`);
+              return false;
+            }
+            if (!tool.page || typeof tool.page !== 'string') {
+              console.warn(`Custom tool "${tool.name}": missing or invalid 'page' field`);
+              return false;
+            }
+            if (!tool.handler || typeof tool.handler !== 'string') {
+              console.warn(`Custom tool "${tool.name}": missing or invalid 'handler' field`);
+              return false;
+            }
+
+            // Validate URL format
+            try {
+              new URL(tool.page);
+            } catch {
+              console.warn(`Custom tool "${tool.name}": invalid URL format in 'page' field`);
+              return false;
+            }
+
+            // Validate parameters field
+            if (tool.parameters && typeof tool.parameters !== 'object') {
+              console.warn(`Custom tool "${tool.name}": invalid 'parameters' field, must be an object`);
+              return false;
+            }
+
+            return true;
+          });
+          
+          if (this.customTools.length > 0) {
+            console.log(`Successfully loaded ${this.customTools.length} custom tools: ${this.customTools.map(t => t.name).join(', ')}`);
+          }
+        } else {
+          console.warn('CUSTOM_TOOLS environment variable must contain a JSON array');
+        }
+      } catch (error) {
+        console.warn('Failed to parse CUSTOM_TOOLS environment variable:', error instanceof Error ? error.message : String(error));
+      }
+    }
   }
 
   private setupToolHandlers() {
     // list available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return {
-        tools: [
-          {
-            name: "getComponentList",
-            description:
-              "Get a list of all components from the configured Storybook",
-            inputSchema: {
-              type: "object",
-              properties: {},
-            },
+      const defaultTools = [
+        {
+          name: "getComponentList",
+          description:
+            "Get a list of all components from the configured Storybook",
+          inputSchema: {
+            type: "object",
+            properties: {},
           },
-          {
-            name: "getComponentsProps",
-            description: "Get props information for multiple components",
-            inputSchema: {
-              type: "object",
-              properties: {
-                componentNames: {
-                  type: "array",
-                  items: {
-                    type: "string",
-                  },
-                  description:
-                    "Array of component names to get props information for",
+        },
+        {
+          name: "getComponentsProps",
+          description: "Get props information for multiple components",
+          inputSchema: {
+            type: "object",
+            properties: {
+              componentNames: {
+                type: "array",
+                items: {
+                  type: "string",
                 },
+                description:
+                  "Array of component names to get props information for",
               },
-              required: ["componentNames"],
             },
+            required: ["componentNames"],
           },
-        ],
+        },
+      ];
+
+      // Add custom tools to the list
+      const customToolDefs = this.customTools.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: {
+          type: "object",
+          properties: tool.parameters || {},
+          required: Object.keys(tool.parameters || {}),
+        },
+      }));
+
+      return {
+        tools: [...defaultTools, ...customToolDefs],
       };
     });
 
@@ -104,6 +184,11 @@ export class StorybookMCPServer {
             const parsed = GetComponentsPropsSchema.parse(args);
             return await this.getComponentsProps(parsed.componentNames);
           default:
+            // Check if it's a custom tool
+            const customTool = this.customTools.find(tool => tool.name === name);
+            if (customTool) {
+              return await this.executeCustomTool(customTool, args);
+            }
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
@@ -242,6 +327,63 @@ export class StorybookMCPServer {
     } catch (error) {
       throw new Error(
         `Failed to get components props: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  // execute custom tool
+  private async executeCustomTool(customTool: CustomTool, args: any) {
+    try {
+      const browser = await chromium.launch({ headless: true });
+      
+      try {
+        const page = await browser.newPage();
+        
+        try {
+          // Navigate to the specified page
+          await page.goto(customTool.page, { waitUntil: "networkidle" });
+          
+          // Wait a bit for the page to fully load
+          await page.waitForTimeout(2000);
+          
+          // Execute the custom handler in the page context
+          const result = await page.evaluate((handlerCode) => {
+            try {
+              // Create a function from the handler code and execute it
+              const handlerFunction = new Function('return ' + handlerCode);
+              return handlerFunction();
+            } catch (error) {
+              throw new Error(`Handler execution failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+          }, customTool.handler);
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: Array.isArray(result) 
+                  ? result.join('\n') 
+                  : typeof result === 'object' 
+                    ? JSON.stringify(result, null, 2)
+                    : String(result),
+              },
+            ],
+          };
+        } catch (pageError) {
+          throw new Error(`Failed to execute custom tool "${customTool.name}": ${
+            pageError instanceof Error ? pageError.message : String(pageError)
+          }`);
+        } finally {
+          await page.close();
+        }
+      } finally {
+        await browser.close();
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to execute custom tool "${customTool.name}": ${
           error instanceof Error ? error.message : String(error)
         }`
       );
