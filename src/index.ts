@@ -5,7 +5,6 @@ import { StorybookMCPServer } from "./server.js";
 // main function
 async function main() {
   try {
-    console.log("Starting Storybook MCP Server...");
     const server = new StorybookMCPServer();
     await server.startStdio();
   } catch (error) {

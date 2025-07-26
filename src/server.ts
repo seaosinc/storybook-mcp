@@ -77,20 +77,28 @@ export class StorybookMCPServer {
         if (Array.isArray(parsed)) {
           this.customTools = parsed.filter((tool: any, index: number) => {
             // Validate required fields
-            if (!tool.name || typeof tool.name !== 'string') {
-              console.warn(`Custom tool at index ${index}: missing or invalid 'name' field`);
+            if (!tool.name || typeof tool.name !== "string") {
+              console.warn(
+                `Custom tool at index ${index}: missing or invalid 'name' field`
+              );
               return false;
             }
-            if (!tool.description || typeof tool.description !== 'string') {
-              console.warn(`Custom tool "${tool.name}": missing or invalid 'description' field`);
+            if (!tool.description || typeof tool.description !== "string") {
+              console.warn(
+                `Custom tool "${tool.name}": missing or invalid 'description' field`
+              );
               return false;
             }
-            if (!tool.page || typeof tool.page !== 'string') {
-              console.warn(`Custom tool "${tool.name}": missing or invalid 'page' field`);
+            if (!tool.page || typeof tool.page !== "string") {
+              console.warn(
+                `Custom tool "${tool.name}": missing or invalid 'page' field`
+              );
               return false;
             }
-            if (!tool.handler || typeof tool.handler !== 'string') {
-              console.warn(`Custom tool "${tool.name}": missing or invalid 'handler' field`);
+            if (!tool.handler || typeof tool.handler !== "string") {
+              console.warn(
+                `Custom tool "${tool.name}": missing or invalid 'handler' field`
+              );
               return false;
             }
 
@@ -98,27 +106,40 @@ export class StorybookMCPServer {
             try {
               new URL(tool.page);
             } catch {
-              console.warn(`Custom tool "${tool.name}": invalid URL format in 'page' field`);
+              console.warn(
+                `Custom tool "${tool.name}": invalid URL format in 'page' field`
+              );
               return false;
             }
 
             // Validate parameters field
-            if (tool.parameters && typeof tool.parameters !== 'object') {
-              console.warn(`Custom tool "${tool.name}": invalid 'parameters' field, must be an object`);
+            if (tool.parameters && typeof tool.parameters !== "object") {
+              console.warn(
+                `Custom tool "${tool.name}": invalid 'parameters' field, must be an object`
+              );
               return false;
             }
 
             return true;
           });
-          
+
           if (this.customTools.length > 0) {
-            console.log(`Successfully loaded ${this.customTools.length} custom tools: ${this.customTools.map(t => t.name).join(', ')}`);
+            console.error(
+              `Successfully loaded ${
+                this.customTools.length
+              } custom tools: ${this.customTools.map((t) => t.name).join(", ")}`
+            );
           }
         } else {
-          console.warn('CUSTOM_TOOLS environment variable must contain a JSON array');
+          console.warn(
+            "CUSTOM_TOOLS environment variable must contain a JSON array"
+          );
         }
       } catch (error) {
-        console.warn('Failed to parse CUSTOM_TOOLS environment variable:', error instanceof Error ? error.message : String(error));
+        console.warn(
+          "Failed to parse CUSTOM_TOOLS environment variable:",
+          error instanceof Error ? error.message : String(error)
+        );
       }
     }
   }
@@ -157,7 +178,7 @@ export class StorybookMCPServer {
       ];
 
       // Add custom tools to the list
-      const customToolDefs = this.customTools.map(tool => ({
+      const customToolDefs = this.customTools.map((tool) => ({
         name: tool.name,
         description: tool.description,
         inputSchema: {
@@ -185,7 +206,9 @@ export class StorybookMCPServer {
             return await this.getComponentsProps(parsed.componentNames);
           default:
             // Check if it's a custom tool
-            const customTool = this.customTools.find(tool => tool.name === name);
+            const customTool = this.customTools.find(
+              (tool) => tool.name === name
+            );
             if (customTool) {
               return await this.executeCustomTool(customTool, args);
             }
@@ -262,11 +285,21 @@ export class StorybookMCPServer {
           try {
             const componentUrl =
               data.v === 3
-                ? getComponentPropsDocUrlV3(data, componentName, this.storybookUrl)
-                : getComponentPropsDocUrlV5(data, componentName, this.storybookUrl);
+                ? getComponentPropsDocUrlV3(
+                    data,
+                    componentName,
+                    this.storybookUrl
+                  )
+                : getComponentPropsDocUrlV5(
+                    data,
+                    componentName,
+                    this.storybookUrl
+                  );
 
             if (!componentUrl) {
-              errors[componentName] = `Component "${componentName}" not found in Storybook`;
+              errors[
+                componentName
+              ] = `Component "${componentName}" not found in Storybook`;
               continue;
             }
 
@@ -288,15 +321,21 @@ export class StorybookMCPServer {
 
               results[componentName] = propsTableHTML;
             } catch (pageError) {
-              errors[componentName] = `Failed to load component page or find props table: ${
-                pageError instanceof Error ? pageError.message : String(pageError)
+              errors[
+                componentName
+              ] = `Failed to load component page or find props table: ${
+                pageError instanceof Error
+                  ? pageError.message
+                  : String(pageError)
               }`;
             } finally {
               await page.close();
             }
           } catch (componentError) {
             errors[componentName] = `Failed to get component URL: ${
-              componentError instanceof Error ? componentError.message : String(componentError)
+              componentError instanceof Error
+                ? componentError.message
+                : String(componentError)
             }`;
           }
         }
@@ -337,44 +376,39 @@ export class StorybookMCPServer {
   private async executeCustomTool(customTool: CustomTool, args: any) {
     try {
       const browser = await chromium.launch({ headless: true });
-      
+
       try {
         const page = await browser.newPage();
-        
+
         try {
           // Navigate to the specified page
           await page.goto(customTool.page, { waitUntil: "networkidle" });
-          
+
           // Wait a bit for the page to fully load
           await page.waitForTimeout(2000);
-          
-          // Execute the custom handler in the page context
+
           const result = await page.evaluate((handlerCode) => {
-            try {
-              // Create a function from the handler code and execute it
-              const handlerFunction = new Function('return ' + handlerCode);
-              return handlerFunction();
-            } catch (error) {
-              throw new Error(`Handler execution failed: ${error instanceof Error ? error.message : String(error)}`);
-            }
+            return new Function(`return ${handlerCode}`).call(null);
           }, customTool.handler);
 
           return {
             content: [
               {
                 type: "text",
-                text: Array.isArray(result) 
-                  ? result.join('\n') 
-                  : typeof result === 'object' 
-                    ? JSON.stringify(result, null, 2)
-                    : String(result),
+                text: Array.isArray(result)
+                  ? result.join("\n")
+                  : typeof result === "object"
+                  ? JSON.stringify(result, null, 2)
+                  : String(result),
               },
             ],
           };
         } catch (pageError) {
-          throw new Error(`Failed to execute custom tool "${customTool.name}": ${
-            pageError instanceof Error ? pageError.message : String(pageError)
-          }`);
+          throw new Error(
+            `Failed to execute custom tool "${customTool.name}": ${
+              pageError instanceof Error ? pageError.message : String(pageError)
+            }`
+          );
         } finally {
           await page.close();
         }
@@ -394,6 +428,5 @@ export class StorybookMCPServer {
   async startStdio() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.log("Storybook MCP Server running on stdio mode");
   }
 }
