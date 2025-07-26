@@ -25,8 +25,7 @@ Add the following configuration to MCP settings:
       "command": "npx",
       "args": ["-y", "storybook-mcp"],
       "env": {
-        "STORYBOOK_URL": "<your_storybook_url>/index.json",
-        "CUSTOM_TOOLS": "[{\"name\":\"getIconList\",\"description\":\"Get All Icons from the Icon page\",\"parameters\":{},\"page\":\"https://spring-ui.jupiter.int.rclabenv.com/develop/iframe.html?viewMode=docs&id=icon-icon-list--icon-list&args=\",\"handler\":\"Array.from(document.querySelectorAll('#story--icon-icon-list--icon-list [class=\\\"typography-subtitleMini\\\"]')).map(i => i.textContent)\"}]"
+        "STORYBOOK_URL": "<your_storybook_url>/index.json"
       }
     }
   }
