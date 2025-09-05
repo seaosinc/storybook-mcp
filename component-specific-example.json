@@ -1,0 +1,26 @@
+[
+  {
+    "name": "getComponentSlots",
+    "description": "Extract slot information from a component documentation page",
+    "parameters": {
+      "componentName": {
+        "type": "string", 
+        "description": "Name of the component to analyze for slots"
+      }
+    },
+    "page": "https://your-storybook.com/?path=/docs/components-modal-uslideupwindow--docs",
+    "handler": "try { const slots = []; const slotElements = document.querySelectorAll('[data-testid*=\"slot\"], .slot-info, .slots section, h3:contains(\"Slots\") + *'); slotElements.forEach(el => { const text = el.textContent?.trim(); if (text && text.length > 5) slots.push(text); }); const slotHeaders = Array.from(document.querySelectorAll('h3, h4, strong')).filter(h => h.textContent?.toLowerCase().includes('slot')); slotHeaders.forEach(h => { const next = h.nextElementSibling; if (next) slots.push(`${h.textContent}: ${next.textContent?.trim()}`); }); return slots.length > 0 ? { componentName: arguments[0]?.componentName || 'Unknown', slots: [...new Set(slots)] } : 'No slot information found'; } catch(e) { return { error: e.message }; }"
+  },
+  {
+    "name": "getComponentMethods",
+    "description": "Extract public methods from component documentation",
+    "parameters": {
+      "componentName": {
+        "type": "string",
+        "description": "Name of the component to analyze for methods"  
+      }
+    },
+    "page": "https://your-storybook.com/?path=/docs/components-modal-uslideupwindow--docs",
+    "handler": "try { const methods = []; const methodElements = document.querySelectorAll('[data-testid*=\"method\"], .method-info, code:contains(\"(\"), .api section'); const codeBlocks = document.querySelectorAll('code, pre'); codeBlocks.forEach(code => { const text = code.textContent || ''; if (text.includes('(') && text.includes(')') && text.length < 100) { methods.push(text.trim()); } }); const methodHeaders = Array.from(document.querySelectorAll('h3, h4, strong')).filter(h => h.textContent?.toLowerCase().includes('method')); methodHeaders.forEach(h => { const next = h.nextElementSibling; if (next) methods.push(`${h.textContent}: ${next.textContent?.trim()}`); }); return methods.length > 0 ? { componentName: arguments[0]?.componentName || 'Unknown', methods: [...new Set(methods)] } : 'No method information found'; } catch(e) { return { error: e.message }; }"
+  }
+]
