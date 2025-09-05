@@ -1,5 +1,5 @@
 {
-  "name": "storybook-mcp",
+  "name": "@seaosinc/storybook-mcp",
   "version": "0.4.1",
   "description": "A Model Context Protocol (MCP) server for Storybook.",
   "main": "./dist/index.js",
