@@ -1,0 +1,28 @@
+[
+  {
+    "name": "getStorybookTitle",
+    "description": "Get the title and basic information from the Storybook main page",
+    "parameters": {},
+    "page": "https://opensource.adobe.com/spectrum-web-components/storybook/",
+    "handler": "try { const title = document.title || 'No title'; const h1 = document.querySelector('h1')?.textContent || 'No h1 found'; return { title: title, mainHeading: h1, url: window.location.href }; } catch(e) { return { error: e.message }; }"
+  },
+  {
+    "name": "countStorybookComponents",
+    "description": "Count the number of components visible in the Storybook sidebar",
+    "parameters": {},
+    "page": "https://opensource.adobe.com/spectrum-web-components/storybook/",
+    "handler": "try { const sidebarItems = document.querySelectorAll('[data-nodetype=\"component\"], .sidebar-item'); return { componentCount: sidebarItems.length, message: `Found ${sidebarItems.length} components in sidebar` }; } catch(e) { return { error: e.message, count: 0 }; }"
+  },
+  {
+    "name": "getPageMetadata",
+    "description": "Extract basic metadata from any Storybook page (safe read-only operation)",
+    "parameters": {
+      "pageUrl": {
+        "type": "string",
+        "description": "The specific Storybook page URL to analyze"
+      }
+    },
+    "page": "https://opensource.adobe.com/spectrum-web-components/storybook/",
+    "handler": "try { return { pageTitle: document.title, url: window.location.href, hasStorybookRoot: !!document.querySelector('#storybook-root'), timestamp: new Date().toISOString() }; } catch(e) { return { error: e.message }; }"
+  }
+]
